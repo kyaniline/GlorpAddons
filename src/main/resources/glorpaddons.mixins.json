@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.glorpaddons.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "DrawBackgroundMixin",
+    "GenericContainerScreenMixin",
+    "HandledScreenMixin",
+    "MouseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
