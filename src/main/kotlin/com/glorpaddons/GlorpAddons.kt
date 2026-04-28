@@ -6,6 +6,7 @@ import com.glorpaddons.equipment.EquipmentTracker
 import com.glorpaddons.farming.FarmingConfigManager
 import com.glorpaddons.farming.PestHighlighter
 import com.glorpaddons.itemrarity.ItemRarityConfigManager
+import com.glorpaddons.misc.CoalGlassModel
 import com.glorpaddons.misc.MiscConfigManager
 import com.glorpaddons.misc.PeekChat
 import com.glorpaddons.mobesp.BatEsp
@@ -37,6 +38,7 @@ object GlorpAddons : ClientModInitializer {
         ItemRarityConfigManager.load()
         MiscConfigManager.load()
         FarmingConfigManager.load()
+        CoalGlassModel.register()
         CommissionHud.register()
         StorageOverlay.register()
         BatEsp.register()

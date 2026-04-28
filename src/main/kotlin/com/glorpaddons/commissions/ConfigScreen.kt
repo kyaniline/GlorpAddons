@@ -55,6 +55,7 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
     // Misc
     private var cancelAnimToggleRect = Rect(0, 0, 0, 0)
     private var peekChatToggleRect   = Rect(0, 0, 0, 0)
+    private var fuckCoalToggleRect   = Rect(0, 0, 0, 0)
 
     // Farming
     private var pestHighlightToggleRect = Rect(0, 0, 0, 0)
@@ -82,6 +83,7 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
         batEspToggleRect    = Rect(toggleX, cy,      36, 14)
         cancelAnimToggleRect  = Rect(toggleX, cy,      36, 14)
         peekChatToggleRect    = Rect(toggleX, cy + 28, 36, 14)
+        fuckCoalToggleRect    = Rect(toggleX, cy + 56, 36, 14)
         pestHighlightToggleRect   = Rect(toggleX, cy + 28,  36, 14)
 
         val arrowW = 16; val arrowH = 14
@@ -199,6 +201,9 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
 
         drawText(context, "Peek Chat (hold Z)", cx, cy + 56, 0xFFCCCCCC.toInt())
         drawToggle(context, peekChatToggleRect.x, peekChatToggleRect.y, MiscConfigManager.config.peekChatEnabled)
+
+        drawText(context, "Fuck Coal", cx, cy + 84, 0xFFCCCCCC.toInt())
+        drawToggle(context, fuckCoalToggleRect.x, fuckCoalToggleRect.y, MiscConfigManager.config.fuckCoalEnabled)
     }
 
     private fun renderMobEsp(context: DrawContext, mouseX: Int, mouseY: Int) {
@@ -313,6 +318,13 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
                 if (peekChatToggleRect.contains(mx, my)) {
                     MiscConfigManager.config.peekChatEnabled = !MiscConfigManager.config.peekChatEnabled
                     MiscConfigManager.save()
+                    return true
+                }
+                if (fuckCoalToggleRect.contains(mx, my)) {
+                    MiscConfigManager.config.fuckCoalEnabled = !MiscConfigManager.config.fuckCoalEnabled
+                    MiscConfigManager.save()
+                    // Force chunk rebuild so the change is visible immediately
+                    client?.worldRenderer?.reload()
                     return true
                 }
             }

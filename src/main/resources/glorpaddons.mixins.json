@@ -13,6 +13,7 @@
     "ItemRarityMixin",
     "MinecraftClientMixin",
     "MouseMixin",
+    "RenderLayersMixin",
     "SlotAccessorMixin"
   ],
   "injectors": {
