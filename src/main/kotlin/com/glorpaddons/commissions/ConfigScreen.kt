@@ -54,14 +54,11 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
 
     // Misc
     private var cancelAnimToggleRect = Rect(0, 0, 0, 0)
+    private var peekChatToggleRect   = Rect(0, 0, 0, 0)
 
     // Farming
-    private var mouseLockToggleRect        = Rect(0, 0, 0, 0)
-    private var mouseLockGroundToggleRect  = Rect(0, 0, 0, 0)
-    private var pestHighlightToggleRect    = Rect(0, 0, 0, 0)
-    private var farmingHudToggleRect       = Rect(0, 0, 0, 0)
-    private var visitorHelperToggleRect    = Rect(0, 0, 0, 0)
-    private var gardenPlotsToggleRect      = Rect(0, 0, 0, 0)
+    private var pestHighlightToggleRect = Rect(0, 0, 0, 0)
+
 
     override fun init() {
         px = (width  - panelSize) / 2
@@ -84,12 +81,8 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
         equipmentToggleRect = Rect(toggleX, cy + 84, 36, 14)
         batEspToggleRect    = Rect(toggleX, cy,      36, 14)
         cancelAnimToggleRect  = Rect(toggleX, cy,      36, 14)
-        mouseLockToggleRect       = Rect(toggleX, cy,       36, 14)
-        mouseLockGroundToggleRect = Rect(toggleX, cy + 28,  36, 14)
-        pestHighlightToggleRect   = Rect(toggleX, cy + 56,  36, 14)
-        farmingHudToggleRect      = Rect(toggleX, cy + 84,  36, 14)
-        visitorHelperToggleRect   = Rect(toggleX, cy + 112, 36, 14)
-        gardenPlotsToggleRect     = Rect(toggleX, cy + 140, 36, 14)
+        peekChatToggleRect    = Rect(toggleX, cy + 28, 36, 14)
+        pestHighlightToggleRect   = Rect(toggleX, cy + 28,  36, 14)
 
         val arrowW = 16; val arrowH = 14
         val arrowRightX = px + panelSize - pad - arrowW
@@ -191,6 +184,7 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
 
         drawText(context, "Show Equipment", cx, cy + 112, 0xFFCCCCCC.toInt())
         drawToggle(context, equipmentToggleRect.x, equipmentToggleRect.y, EquipmentConfigManager.config.showEquipmentInInventory)
+
     }
 
     private fun renderMisc(context: DrawContext, mouseX: Int, mouseY: Int) {
@@ -202,6 +196,9 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
 
         drawText(context, "Cancel Anim. Updates", cx, cy + 28, 0xFFCCCCCC.toInt())
         drawToggle(context, cancelAnimToggleRect.x, cancelAnimToggleRect.y, MiscConfigManager.config.cancelComponentUpdateAnimations)
+
+        drawText(context, "Peek Chat (hold Z)", cx, cy + 56, 0xFFCCCCCC.toInt())
+        drawToggle(context, peekChatToggleRect.x, peekChatToggleRect.y, MiscConfigManager.config.peekChatEnabled)
     }
 
     private fun renderMobEsp(context: DrawContext, mouseX: Int, mouseY: Int) {
@@ -222,23 +219,8 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
         drawText(context, "Farming", cx, cy, 0xFFFFFFFF.toInt())
         context.fill(cx, cy + 12, px + panelSize - pad, cy + 13, 0x28FFFFFF)
 
-        drawText(context, "Mouse Lock", cx, cy + 28, 0xFFCCCCCC.toInt())
-        drawToggle(context, mouseLockToggleRect.x, mouseLockToggleRect.y, FarmingConfigManager.config.mouseLockEnabled)
-
-        drawText(context, "Ground Only", cx, cy + 56, 0xFFCCCCCC.toInt())
-        drawToggle(context, mouseLockGroundToggleRect.x, mouseLockGroundToggleRect.y, FarmingConfigManager.config.mouseLockGroundOnly)
-
-        drawText(context, "Pest Highlight", cx, cy + 84, 0xFFCCCCCC.toInt())
+        drawText(context, "Pest Highlight", cx, cy + 28, 0xFFCCCCCC.toInt())
         drawToggle(context, pestHighlightToggleRect.x, pestHighlightToggleRect.y, FarmingConfigManager.config.pestHighlightEnabled)
-
-        drawText(context, "Farming HUD", cx, cy + 112, 0xFFCCCCCC.toInt())
-        drawToggle(context, farmingHudToggleRect.x, farmingHudToggleRect.y, FarmingConfigManager.config.farmingHudEnabled)
-
-        drawText(context, "Visitor Helper", cx, cy + 140, 0xFFCCCCCC.toInt())
-        drawToggle(context, visitorHelperToggleRect.x, visitorHelperToggleRect.y, FarmingConfigManager.config.visitorHelperEnabled)
-
-        drawText(context, "Garden Plots", cx, cy + 168, 0xFFCCCCCC.toInt())
-        drawToggle(context, gardenPlotsToggleRect.x, gardenPlotsToggleRect.y, FarmingConfigManager.config.gardenPlotsEnabled)
     }
 
     private fun drawArrowButton(context: DrawContext, r: Rect, label: String, mx: Int, my: Int) {
@@ -328,30 +310,15 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
                     MiscConfigManager.save()
                     return true
                 }
+                if (peekChatToggleRect.contains(mx, my)) {
+                    MiscConfigManager.config.peekChatEnabled = !MiscConfigManager.config.peekChatEnabled
+                    MiscConfigManager.save()
+                    return true
+                }
             }
             4 -> {
-                if (mouseLockToggleRect.contains(mx, my)) {
-                    FarmingConfigManager.config.mouseLockEnabled = !FarmingConfigManager.config.mouseLockEnabled
-                    FarmingConfigManager.save(); return true
-                }
-                if (mouseLockGroundToggleRect.contains(mx, my)) {
-                    FarmingConfigManager.config.mouseLockGroundOnly = !FarmingConfigManager.config.mouseLockGroundOnly
-                    FarmingConfigManager.save(); return true
-                }
                 if (pestHighlightToggleRect.contains(mx, my)) {
                     FarmingConfigManager.config.pestHighlightEnabled = !FarmingConfigManager.config.pestHighlightEnabled
-                    FarmingConfigManager.save(); return true
-                }
-                if (farmingHudToggleRect.contains(mx, my)) {
-                    FarmingConfigManager.config.farmingHudEnabled = !FarmingConfigManager.config.farmingHudEnabled
-                    FarmingConfigManager.save(); return true
-                }
-                if (visitorHelperToggleRect.contains(mx, my)) {
-                    FarmingConfigManager.config.visitorHelperEnabled = !FarmingConfigManager.config.visitorHelperEnabled
-                    FarmingConfigManager.save(); return true
-                }
-                if (gardenPlotsToggleRect.contains(mx, my)) {
-                    FarmingConfigManager.config.gardenPlotsEnabled = !FarmingConfigManager.config.gardenPlotsEnabled
                     FarmingConfigManager.save(); return true
                 }
             }

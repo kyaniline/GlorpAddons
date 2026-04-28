@@ -30,6 +30,11 @@ object CommissionHud {
     private const val RADIUS     = 6
     private const val BAR_HEIGHT = 4f
 
+    fun computeHeight(count: Int): Float {
+        val entryCount = count.coerceAtLeast(1)
+        return PADDING + 14f + entryCount * (12f + BAR_HEIGHT + 8f) + PADDING
+    }
+
     fun register() {
         HudElementRegistry.attachElementBefore(
             VanillaHudElements.CHAT,
@@ -54,8 +59,10 @@ object CommissionHud {
         val x = cfg.x
         val y = cfg.y
         val w = cfg.width
-        val h = cfg.height
         val innerW = w - PADDING * 2
+
+        // Use configured height, but expand if needed to fit all commissions
+        val h = maxOf(cfg.height, computeHeight(commissions.size))
 
         // Background
         RenderUtils.drawRoundedRect(context, x, y, w, h, RADIUS, COLOR_BACKGROUND)
@@ -71,7 +78,6 @@ object CommissionHud {
         }
 
         for (commission in commissions) {
-            if (offsetY + 22f > y + h - PADDING) break
 
             // Commission name (truncated) and progress text on the same line
             val progressText = if (commission.isDone) "DONE" else "${commission.current}%"

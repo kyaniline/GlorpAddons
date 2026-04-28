@@ -3,6 +3,7 @@
   "package": "com.glorpaddons.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "ChatHudMixin",
     "DrawBackgroundMixin",
     "EntityGlowMixin",
     "GenericContainerScreenMixin",

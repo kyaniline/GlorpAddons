@@ -9,7 +9,7 @@ Built incrementally — new features are added over time.
 |---|---|
 | Minecraft | 1.21.10 |
 | Mod Loader | Fabric |
-| Language | Kotlin |
+| Language | Kotlin + Java (mixins) |
 | Yarn Mappings | 1.21.10+build.3 |
 | Fabric Loader | 0.18.4 |
 | Fabric API | 0.138.3+1.21.10 |
@@ -29,6 +29,12 @@ Built incrementally — new features are added over time.
 - Custom font styling uses `StyleSpriteSource.Font(Identifier)` (not `Style.withFont(Identifier)`)
 - HUD registration uses `HudElementRegistry.attachElementBefore()` from `net.fabricmc.fabric.api.client.rendering.v1.hud`
 
+## Config Screen (`/ga`)
+- 280×280 panel, rounded edges, semi-transparent dark navy background
+- Left column (86px): section navigation buttons (highlighted when active)
+- Right content: section-specific options
+- Sections: `["⛏  Mining", "Inventory", "Mob ESP", "Misc", "Farming"]`
+
 ## Features
 
 ### Feature 1 — Mining Commission Tracker
@@ -38,12 +44,7 @@ Built incrementally — new features are added over time.
 A HUD overlay that tracks active mining commissions while the player is in the Dwarven Mines,
 Glacite Tunnels, or Glacite Mineshaft on Hypixel Skyblock.
 
-**Command:** `/ga` — opens the config screen. `/ga debug` — dumps tab list entries to chat.
-
-**Config screen (`/ga`):**
-- Square 360×360 panel, rounded edges, semi-transparent dark navy background, Inter font
-- Left column (112px): section navigation buttons (gold when active)
-- Right content: section-specific options
+**Command:** `/ga` — opens the config screen. `/ga debug` — dumps tab list entries to chat. `/ga commissions` — dumps parsed commissions to chat.
 
 **Mining section options:**
 - Commission HUD toggle (ON/OFF pill switch)
@@ -51,7 +52,7 @@ Glacite Tunnels, or Glacite Mineshaft on Hypixel Skyblock.
 
 **MiningConfigScreen:**
 - Full-screen overlay showing live HUD preview
-- Drag HUD body to reposition; drag `↘` corner handle to resize
+- Drag HUD body to reposition; drag `↘` corner handle to resize (width + height)
 - "◀ Back" button and "Reset Position" button (custom styled, no ButtonWidget)
 - ESC / Back saves and returns to config screen
 
@@ -60,13 +61,17 @@ Glacite Tunnels, or Glacite Mineshaft on Hypixel Skyblock.
 - Gold title: `⛏ Commissions`
 - Per commission: name + progress % (right-aligned) + progress bar below
 - Blue bar (`0xFF2196F3`) for in-progress, green bar (`0xFF00C853`) + green "DONE" for completed
+- Auto-expands height to fit all commissions via `computeHeight(count)`
 - Only visible in Dwarven Mines, Glacite Tunnels, or Glacite Mineshaft (tab list area detection)
 
 **Data source:**
 - Reads `client.networkHandler.playerList` (Hypixel tab list widget)
 - Sorted by `scoreboardTeam?.name` then `profile.name` (case-insensitive)
 - Area detected via `"Area: <name>"` line in tab list
-- Commissions parsed from `"Commissions:"` header → `"Name: XX%"` lines → `"Info"` ends section
+- Commissions parsed from `"Commissions:"` header (startsWith, case-insensitive) → `"Name: XX%"` or `"Name: DONE"` lines → `"Info"` ends section
+- Empty/spacer lines skipped (not treated as end of section)
+- Formatting stripped with `§.` regex (catches all formatting codes including hex)
+- Safety limit: parser stops after 10 lines past the header
 
 **Files:**
 ```
@@ -82,10 +87,6 @@ src/main/kotlin/com/glorpaddons/
 │   └── MiningConfigScreen.kt             ← HUD position/size editor screen
 └── util/
     └── RenderUtils.kt                    ← drawRoundedRect() using DrawContext.fill() scanlines
-
-src/main/resources/assets/glorpaddons/font/
-├── inter.ttf                             ← Inter Regular (open-source Arial equivalent)
-└── inter.json                            ← font provider (TTF, size 10, oversample 4)
 ```
 
 ---
@@ -142,7 +143,7 @@ Items can be moved between storage and inventory directly from the overlay.
   - Cancels `drawForeground` (Yarn name for the label-drawing method) so "Inventory" and container title text don't bleed through
   - Overrides `isClickOutsideBounds` to return `false` so the screen never closes when clicking inside our overlay panels
 - `SlotAccessor` (`@Mixin(Slot.class)`, accessor interface) — generates `setX(int)` / `setY(int)` via `@Accessor` to write the otherwise-final `slot.x` and `slot.y` fields from within `HandledScreenMixin`
-- `MouseMixin` — saves/restores GLFW cursor position around `lockCursor`/`unlockCursor` so the cursor doesn't snap to screen center when navigating between pages
+- `MouseMixin` — saves/restores GLFW cursor position around `lockCursor`/`unlockCursor` so the cursor doesn't snap to screen center when navigating between pages; also intercepts scroll events during peek chat
 
 **Item interaction:**
 - `StorageOverlay.handleClick` uses manual `clickSlot` packets instead of relying on vanilla's slot pipeline:
@@ -153,28 +154,299 @@ Items can be moved between storage and inventory directly from the overlay.
 
 **Files:**
 ```
-src/main/kotlin/com/glorpaddons/
-├── storage/
-│   ├── StorageOverlay.kt       ← all rendering, input handling, smooth scroll, search, clickSlot
-│   ├── StorageCache.kt         ← page registry, item cache, overview/sub-page state
-│   ├── StoragePageSlot.kt      ← known page definitions, title matching, navigation
-│   ├── StorageConfig.kt        ← enabled + scrollSpeed (1–10)
-│   └── StorageConfigManager.kt ← load/save StorageConfig via Gson
+src/main/kotlin/com/glorpaddons/storage/
+├── StorageOverlay.kt       ← all rendering, input handling, smooth scroll, search, clickSlot
+├── StorageCache.kt         ← page registry, item cache, overview/sub-page state, NBT persistence
+├── StoragePageSlot.kt      ← known page definitions, title matching, navigation
+├── StoragePage.kt          ← page data model (pageSlot, icon, name)
+├── StorageConfig.kt        ← enabled + scrollSpeed (1–10)
+└── StorageConfigManager.kt ← load/save StorageConfig via Gson
 
 src/main/java/com/glorpaddons/mixin/
 ├── DrawBackgroundMixin.java         ← cancels GenericContainerScreen.drawBackground
 ├── GenericContainerScreenMixin.java ← cancels applyBlur + renderBackground on Screen
 ├── HandledScreenMixin.java          ← moves all slots off-screen + cancels drawForeground
-├── SlotAccessor.java                ← @Accessor mixin giving setX/setY for final Slot fields
-└── MouseMixin.java                  ← cursor-reset suppression during page navigation
+├── SlotAccessorMixin.java           ← @Accessor mixin giving setX/setY for final Slot fields
+└── MouseMixin.java                  ← cursor-reset suppression during page navigation + peek chat scroll
 ```
 
-**Known limitations / future work:**
-- Items dropped onto the overlay outside the active grid are not handled (no drag support)
-- Double-click to collect all is not implemented
-- The overview screen's thumbnail items cannot be interacted with (by design — navigate first)
+---
+
+### Feature 3 — Bat ESP
+**Status:** Complete ✓
+
+**Description:**
+Renders green wireframe boxes around all bat entities (through walls) and draws a tracer
+line from the camera to the nearest bat. Used for finding hidden bats in mining areas.
+
+**Config:** Toggle in the "Mob ESP" section of `/ga`.
+
+**Rendering:**
+- Uses a custom `RenderPipeline` with `POSITION_COLOR_SNIPPET`, `NO_DEPTH_TEST`, and `DEBUG_LINES` draw mode
+- Renders via `WorldRenderEvents.AFTER_ENTITIES`
+- Camera-relative vertex coordinates with sub-tick interpolation via `MathHelper.lerp`
+- Tracer starts 0.1 units in front of camera (avoids near-clip) using forward direction from yaw/pitch
+- Box edges drawn as 12 individual line segments (4 bottom + 4 top + 4 vertical)
+
+**Files:**
+```
+src/main/kotlin/com/glorpaddons/mobesp/
+├── BatEsp.kt              ← rendering logic, RenderPipeline/RenderLayer setup
+├── MobEspConfig.kt        ← batEspEnabled toggle
+└── MobEspConfigManager.kt ← load/save via Gson
+```
 
 ---
+
+### Feature 4 — Item Rarity Backgrounds
+**Status:** Complete ✓
+
+**Description:**
+Draws colored gradient backgrounds behind items in inventory slots and the hotbar,
+matching the item's Skyblock rarity. Colors and sprite pattern match Skyblocker's implementation.
+
+**Config:** Toggle "Rarity Backgrounds" in the "Inventory" section of `/ga`.
+
+**Detection:**
+- Reads the last non-empty line of item lore (via `DataComponentTypes.LORE`)
+- Matches against rarity keywords (ADMIN, VERY SPECIAL, SPECIAL, DIVINE, MYTHIC, LEGENDARY, EPIC, RARE, UNCOMMON, COMMON, SUPREME, ULTIMATE)
+- Uses `indexOf` + word-boundary check to handle recombobulated items (obfuscated prefix)
+
+**Rendering:**
+- 5-ring concentric gradient from border (alpha 189) to center (alpha 71), matching Skyblocker's `item_background_square` sprite
+- Each pixel painted exactly once (no overdraw / alpha compounding)
+- Disabled during storage overlay to prevent visual clutter
+
+**Mixins:**
+- `ItemRarityMixin` (`@Mixin(HandledScreen.class)`) — `@Inject` at `drawSlot` HEAD to draw behind container/inventory items
+- `InGameHudMixin` — `@Inject` at `renderHotbarItem` HEAD to draw behind hotbar items
+
+**Files:**
+```
+src/main/kotlin/com/glorpaddons/itemrarity/
+├── ItemRarityBg.kt              ← rarity detection + gradient rendering
+├── ItemRarityConfig.kt          ← enabled toggle
+└── ItemRarityConfigManager.kt   ← load/save via Gson
+```
+
+---
+
+### Feature 5 — Equipment Overlay
+**Status:** Complete ✓
+
+**Description:**
+Shows the player's Hypixel Skyblock equipment (necklace, cloak, belt, gauntlet) in the
+vanilla inventory screen. Equipment items are cached from the `/equipment` GUI.
+
+**Config:** Toggle "Show Equipment" in the "Inventory" section of `/ga`.
+
+**How it works:**
+- `EquipmentTracker` watches for `GenericContainerScreen` with "equipment" in the title
+- Reads items from column 1, rows 1–4 (handler slots 10, 19, 28, 37)
+- Caches a snapshot of the 4 equipment items
+- `GlorpInventoryScreen` extends `InventoryScreen` to render equipment slots
+- `MinecraftClientMixin` uses `@WrapOperation` on `handleInputEvents` to replace the vanilla `InventoryScreen` constructor with `GlorpInventoryScreen` when enabled
+- Equipment slots rendered at column x=77 relative to screen, starting at y=8, spaced 18px apart
+- Offhand slot shifted 21px right to avoid overlap with 4th equipment row
+- Clicking any equipment slot sends `/equipment` command
+- Supports rarity backgrounds on equipment items when both features are enabled
+
+**Files:**
+```
+src/main/kotlin/com/glorpaddons/equipment/
+├── EquipmentTracker.kt        ← reads equipment from /equipment GUI, caches snapshot
+├── EquipmentConfig.kt         ← showEquipmentInInventory toggle
+└── EquipmentConfigManager.kt  ← load/save via Gson
+
+src/main/java/com/glorpaddons/screen/
+└── GlorpInventoryScreen.java  ← custom InventoryScreen with equipment column
+
+src/main/java/com/glorpaddons/mixin/
+└── MinecraftClientMixin.java  ← replaces InventoryScreen with GlorpInventoryScreen
+```
+
+---
+
+### Feature 6 — Cancel Component Update Animations
+**Status:** Complete ✓
+
+**Description:**
+Suppresses the hand-swap animation that plays when an item's components change but the
+item type stays the same (e.g. Hypixel updating lore mid-game).
+
+**Config:** Toggle "Cancel Anim. Updates" in the "Misc" section of `/ga`.
+
+**Mixin:**
+- `HeldItemRendererMixin` (`@Mixin(HeldItemRenderer.class)`) — `@Inject` at `shouldSkipHandAnimationOnSwap` RETURN
+- When enabled and `from.getItem() == to.getItem()`, returns `true` to skip the animation
+
+**Files:**
+```
+src/main/kotlin/com/glorpaddons/misc/
+├── MiscConfig.kt            ← cancelComponentUpdateAnimations + peekChatEnabled
+└── MiscConfigManager.kt     ← load/save via Gson
+
+src/main/java/com/glorpaddons/mixin/
+└── HeldItemRendererMixin.java
+```
+
+---
+
+### Feature 7 — Peek Chat
+**Status:** Complete ✓
+
+**Description:**
+Hold Z to temporarily show the chat at full size and full opacity (as if the chat screen
+were open), without actually opening the chat screen. Scroll wheel redirects to chat
+scrolling while peeking. Releasing Z resets chat scroll position.
+
+**Config:** Toggle "Peek Chat (hold Z)" in the "Misc" section of `/ga`.
+
+**How it works:**
+- `PeekChat.tick()` checks GLFW key state for Z key each client tick
+- Only activates when no screen is open (`client.currentScreen == null`)
+- On release: resets chat scroll via `chatHud.resetScroll()`
+
+**Mixins (3 hooks working together):**
+1. `ChatHudMixin` — `@Inject` on `isChatFocused()` RETURN: returns `true` when peeking so `getWidth()`/`getHeight()`/`getVisibleLineCount()` use focused (full-size) dimensions
+2. `ChatHudMixin` — `@ModifyVariable` on `render()` HEAD: changes the boolean parameter to `true` when peeking so `forEachVisibleLine` uses full opacity instead of age-based fade
+3. `InGameHudMixin` — `@Redirect` on `renderChat()`'s `isChatFocused()` call: returns `false` when peeking to prevent `InGameHud` from skipping HUD chat rendering (vanilla skips when `isChatFocused()` is true, assuming `ChatScreen` handles it)
+
+**Scroll interception:**
+- `MouseMixin` — `@Inject` at `onMouseScroll` HEAD: when peeking, redirects scroll to `chatHud.scroll()` with configurable speed multiplier (5x) and cancels the event
+
+**Files:**
+```
+src/main/kotlin/com/glorpaddons/misc/
+├── PeekChat.kt              ← Z key detection, peeking state, scroll reset
+├── MiscConfig.kt            ← peekChatEnabled toggle
+└── MiscConfigManager.kt     ← load/save via Gson
+
+src/main/java/com/glorpaddons/mixin/
+├── ChatHudMixin.java        ← isChatFocused override + render boolean modification
+├── InGameHudMixin.java      ← renderChat isChatFocused redirect
+└── MouseMixin.java          ← scroll interception during peek
+```
+
+---
+
+### Feature 8 — Pest Highlighter
+**Status:** Complete ✓
+
+**Description:**
+Highlights pest mobs (armor stands with specific skull textures) with a dark red glow
+outline, making them visible through blocks. Uses Hypixel Skyblock's pest head textures
+sourced from Skyblocker.
+
+**Config:** Toggle "Pest Highlight" in the "Farming" section of `/ga`.
+
+**Detection:**
+- Scans armor stands within 32-block range each tick
+- Checks helmet item for `PLAYER_HEAD` with a `PROFILE` component
+- Matches Base64-encoded texture values against a set of 16 known pest textures
+  (Beetle, Cricket, Dragonfly, Earthworm head/tail, Field Mouse, Firefly/flash, Fly, Locust, Mite, Mosquito, Moth, Praying Mantis, Rat, Slug)
+- Tracks matching entity IDs in a mutable set
+
+**Rendering:**
+- `EntityGlowMixin` — `@Inject` on `isGlowing()` RETURN: returns `true` for pest entities
+- `EntityGlowMixin` — `@Inject` on `getTeamColorValue()` RETURN: sets glow color to `0xFFB62F00` (dark red)
+
+**Files:**
+```
+src/main/kotlin/com/glorpaddons/farming/
+├── PestHighlighter.kt        ← texture matching, entity tracking, glow color constant
+├── FarmingConfig.kt           ← pestHighlightEnabled toggle
+└── FarmingConfigManager.kt    ← load/save via Gson
+
+src/main/java/com/glorpaddons/mixin/
+└── EntityGlowMixin.java      ← isGlowing + getTeamColorValue overrides
+```
+
+---
+
+## Full File Tree
+```
+src/main/kotlin/com/glorpaddons/
+├── GlorpAddons.kt                          ← entrypoint, config loading, tick registration, commands
+├── commissions/
+│   ├── Commission.kt
+│   ├── CommissionConfig.kt
+│   ├── CommissionHud.kt
+│   ├── CommissionTracker.kt
+│   ├── ConfigManager.kt
+│   ├── ConfigScreen.kt                     ← main /ga config GUI
+│   └── MiningConfigScreen.kt
+├── equipment/
+│   ├── EquipmentConfig.kt
+│   ├── EquipmentConfigManager.kt
+│   └── EquipmentTracker.kt
+├── farming/
+│   ├── FarmingConfig.kt
+│   ├── FarmingConfigManager.kt
+│   └── PestHighlighter.kt
+├── itemrarity/
+│   ├── ItemRarityBg.kt
+│   ├── ItemRarityConfig.kt
+│   └── ItemRarityConfigManager.kt
+├── misc/
+│   ├── MiscConfig.kt
+│   ├── MiscConfigManager.kt
+│   └── PeekChat.kt
+├── mobesp/
+│   ├── BatEsp.kt
+│   ├── MobEspConfig.kt
+│   └── MobEspConfigManager.kt
+├── storage/
+│   ├── StorageCache.kt
+│   ├── StorageConfig.kt
+│   ├── StorageConfigManager.kt
+│   ├── StorageOverlay.kt
+│   ├── StoragePage.kt
+│   └── StoragePageSlot.kt
+└── util/
+    └── RenderUtils.kt
+
+src/main/java/com/glorpaddons/
+├── mixin/
+│   ├── ChatHudMixin.java
+│   ├── DrawBackgroundMixin.java
+│   ├── EntityGlowMixin.java
+│   ├── GenericContainerScreenMixin.java
+│   ├── HandledScreenMixin.java
+│   ├── HeldItemRendererMixin.java
+│   ├── InGameHudMixin.java
+│   ├── ItemRarityMixin.java
+│   ├── MinecraftClientMixin.java
+│   ├── MouseMixin.java
+│   └── SlotAccessorMixin.java
+└── screen/
+    └── GlorpInventoryScreen.java
+
+src/main/resources/
+├── glorpaddons.mixins.json
+└── assets/glorpaddons/font/
+    ├── inter.ttf
+    └── inter.json
+```
+
+## Mixin Registry (`glorpaddons.mixins.json`)
+```json
+{
+  "client": [
+    "ChatHudMixin",
+    "DrawBackgroundMixin",
+    "EntityGlowMixin",
+    "GenericContainerScreenMixin",
+    "HandledScreenMixin",
+    "HeldItemRendererMixin",
+    "InGameHudMixin",
+    "ItemRarityMixin",
+    "MinecraftClientMixin",
+    "MouseMixin",
+    "SlotAccessorMixin"
+  ]
+}
+```
 
 ## Planned Features
 *(none yet — submit ideas!)*

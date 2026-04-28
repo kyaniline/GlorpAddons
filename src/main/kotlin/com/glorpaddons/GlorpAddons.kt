@@ -4,13 +4,10 @@ import com.glorpaddons.commissions.CommissionHud
 import com.glorpaddons.equipment.EquipmentConfigManager
 import com.glorpaddons.equipment.EquipmentTracker
 import com.glorpaddons.farming.FarmingConfigManager
-import com.glorpaddons.farming.FarmingHud
-import com.glorpaddons.farming.GardenPlots
-import com.glorpaddons.farming.LowerSensitivity
 import com.glorpaddons.farming.PestHighlighter
-import com.glorpaddons.farming.VisitorHelper
 import com.glorpaddons.itemrarity.ItemRarityConfigManager
 import com.glorpaddons.misc.MiscConfigManager
+import com.glorpaddons.misc.PeekChat
 import com.glorpaddons.mobesp.BatEsp
 import com.glorpaddons.mobesp.MobEspConfigManager
 import com.glorpaddons.storage.StorageConfigManager
@@ -43,15 +40,12 @@ object GlorpAddons : ClientModInitializer {
         CommissionHud.register()
         StorageOverlay.register()
         BatEsp.register()
-        FarmingHud.register()
-        VisitorHelper.register()
-        GardenPlots.register()
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
             CommissionTracker.tick()
             EquipmentTracker.tick(client)
-            LowerSensitivity.tick(client)
             PestHighlighter.tick(client)
+            PeekChat.tick(client)
         }
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
@@ -69,10 +63,33 @@ object GlorpAddons : ClientModInitializer {
                                 Command.SINGLE_SUCCESS
                             }
                     )
+                    .then(
+                        ClientCommandManager.literal("commissions")
+                            .executes { ctx ->
+                                dumpCommissions(ctx.source.client)
+                                Command.SINGLE_SUCCESS
+                            }
+                    )
             )
         }
 
         LOGGER.info("GlorpAddons initialized!")
+    }
+
+    private fun dumpCommissions(client: MinecraftClient) {
+        val player = client.player ?: return
+        val comms = CommissionTracker.commissions
+
+        player.sendMessage(Text.literal("[GA] Area: ${CommissionTracker.currentArea ?: "none"}"), false)
+        if (comms.isEmpty()) {
+            player.sendMessage(Text.literal("[GA] No parsed commissions."), false)
+        } else {
+            player.sendMessage(Text.literal("[GA] Parsed commissions (${comms.size}):"), false)
+            comms.forEachIndexed { i, c ->
+                val status = if (c.isDone) "DONE" else "${c.current}%"
+                player.sendMessage(Text.literal("[GA]  $i: \"${c.name}\" → $status"), false)
+            }
+        }
     }
 
     private fun dumpTabList(client: MinecraftClient) {

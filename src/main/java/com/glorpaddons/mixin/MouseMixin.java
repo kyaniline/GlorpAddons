@@ -1,7 +1,6 @@
 package com.glorpaddons.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.glorpaddons.farming.LowerSensitivity;
+import com.glorpaddons.misc.PeekChat;
 import com.glorpaddons.storage.StorageOverlay;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.MinecraftClient;
@@ -22,9 +21,26 @@ public class MouseMixin {
     @Shadow private double x;
     @Shadow private double y;
     @Shadow @Final private MinecraftClient client;
+    private static final double SCROLL_SPEED_MULTIPLIER = 3.0;
 
     private double glorpaddons$savedX;
     private double glorpaddons$savedY;
+
+    /**
+     * Intercept scroll events to redirect to chat when peek chat is active.
+     */
+    @Inject(method = "onMouseScroll", at = @At("HEAD"), cancellable = true)
+    private void glorpaddons$peekChatScroll(long window, double horizontal, double vertical, CallbackInfo ci) {
+        if (window == this.client.getWindow().getHandle() && PeekChat.getPeeking()) {
+            boolean discrete = this.client.options.getDiscreteMouseScroll().getValue();
+            double sensitivity = this.client.options.getMouseWheelSensitivity().getValue();
+            int amount = (int) ((discrete ? Math.signum(vertical) : vertical) * sensitivity * SCROLL_SPEED_MULTIPLIER);
+            if (amount != 0) {
+                this.client.inGameHud.getChatHud().scroll(amount);
+            }
+            ci.cancel();
+        }
+    }
 
     /**
      * Save the current GLFW cursor position before lockCursor can move it.
@@ -56,20 +72,6 @@ public class MouseMixin {
         } else {
             InputUtil.setCursorParameters(window, code, centerX, centerY);
         }
-    }
-
-    /**
-     * When mouse lock is active (player holds a farming tool), substitute the
-     * sensitivity value with -1/3 so the camera barely moves.
-     */
-    @ModifyExpressionValue(
-        method = "updateMouse",
-        at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/option/SimpleOption;getValue()Ljava/lang/Object;",
-            ordinal = 0))
-    private Object glorpaddons$farmingMouseLock(Object original) {
-        if (LowerSensitivity.isSensitivityLowered()) return -1.0 / 3.0;
-        return original;
     }
 
     /**

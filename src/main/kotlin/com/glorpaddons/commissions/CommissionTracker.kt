@@ -50,11 +50,8 @@ object CommissionTracker {
 
     // ── Area detection ───────────────────────────────────────────────────────
 
-    /**
-     * Finds "Area: Dwarven Mines" (or Glacite Tunnels) in the tab list.
-     */
     private fun detectArea(lines: List<String>): String? {
-        val areaRegex = Regex("""^Area:\s*(.+)$""")
+        val areaRegex = Regex("""Area:\s*(.+)""")
         for (line in lines) {
             val match = areaRegex.find(line.trim()) ?: continue
             val area = match.groupValues[1].trim()
@@ -65,44 +62,42 @@ object CommissionTracker {
 
     // ── Commission parsing ───────────────────────────────────────────────────
 
-    /**
-     * The Hypixel tab list commission widget format:
-     *
-     *   Commissions:
-     *   Royal Mines Mithril: 0%
-     *   Lucky Raffle: 0%
-     *   Goblin Raid Slayer: 0%
-     *   Treasure Hoarder Puncher: 30%
-     *   Info          ← section ends here
-     */
+    private val percentRegex = Regex("""(.+?):\s*(\d+(?:\.\d+)?)%""")
+    private val doneRegex    = Regex("""(.+?):\s*DONE""", RegexOption.IGNORE_CASE)
+
     private fun parseCommissions(lines: List<String>): List<Commission> {
         val result = mutableListOf<Commission>()
         var inSection = false
-
-        val percentRegex = Regex("""^(.+?):\s*(\d+)%$""")
-        val doneRegex    = Regex("""^(.+?):\s*DONE$""", RegexOption.IGNORE_CASE)
+        var linesSinceHeader = 0
 
         for (line in lines) {
             val trimmed = line.trim()
 
-            if (trimmed.equals("Commissions:", ignoreCase = true)) {
+            if (trimmed.startsWith("Commissions", ignoreCase = true)) {
                 inSection = true
+                linesSinceHeader = 0
                 continue
             }
 
             if (!inSection) continue
 
-            // Any non-commission header ends the section
-            if (trimmed.isEmpty() || trimmed.equals("Info", ignoreCase = true)) break
+            linesSinceHeader++
 
-            // "Name: XX%"
+            // Safety: commissions section is at most ~6 lines after header
+            if (linesSinceHeader > 10) break
+
+            // Skip blank spacer lines
+            if (trimmed.isEmpty()) continue
+
+            // Known section terminators
+            if (trimmed.equals("Info", ignoreCase = true)) break
+
+            // "Name: XX%" or "Name: XX.X%"
             percentRegex.find(trimmed)?.let {
                 val name    = it.groupValues[1].trim()
-                val percent = it.groupValues[2].toIntOrNull() ?: 0
+                val percent = it.groupValues[2].toFloatOrNull()?.toInt() ?: 0
                 result.add(Commission(name, percent, 100))
-                return@let
             } ?: doneRegex.find(trimmed)?.let {
-                // "Name: DONE"
                 result.add(Commission(it.groupValues[1].trim(), 100, 100))
             }
         }
@@ -110,6 +105,7 @@ object CommissionTracker {
         return result
     }
 
+    /** Strip all § formatting codes including hex color §x sequences. */
     private fun stripFormatting(text: String): String =
-        text.replace(Regex("§[0-9a-fk-orA-FK-OR]"), "")
+        text.replace(Regex("§."), "")
 }
