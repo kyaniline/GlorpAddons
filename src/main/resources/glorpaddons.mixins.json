@@ -4,9 +4,15 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "DrawBackgroundMixin",
+    "EntityGlowMixin",
     "GenericContainerScreenMixin",
     "HandledScreenMixin",
-    "MouseMixin"
+    "HeldItemRendererMixin",
+    "InGameHudMixin",
+    "ItemRarityMixin",
+    "MinecraftClientMixin",
+    "MouseMixin",
+    "SlotAccessorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,6 +1,18 @@
 package com.glorpaddons
 
 import com.glorpaddons.commissions.CommissionHud
+import com.glorpaddons.equipment.EquipmentConfigManager
+import com.glorpaddons.equipment.EquipmentTracker
+import com.glorpaddons.farming.FarmingConfigManager
+import com.glorpaddons.farming.FarmingHud
+import com.glorpaddons.farming.GardenPlots
+import com.glorpaddons.farming.LowerSensitivity
+import com.glorpaddons.farming.PestHighlighter
+import com.glorpaddons.farming.VisitorHelper
+import com.glorpaddons.itemrarity.ItemRarityConfigManager
+import com.glorpaddons.misc.MiscConfigManager
+import com.glorpaddons.mobesp.BatEsp
+import com.glorpaddons.mobesp.MobEspConfigManager
 import com.glorpaddons.storage.StorageConfigManager
 import com.glorpaddons.storage.StorageOverlay
 import com.glorpaddons.commissions.CommissionTracker
@@ -23,11 +35,23 @@ object GlorpAddons : ClientModInitializer {
     override fun onInitializeClient() {
         ConfigManager.load()
         StorageConfigManager.load()
+        MobEspConfigManager.load()
+        EquipmentConfigManager.load()
+        ItemRarityConfigManager.load()
+        MiscConfigManager.load()
+        FarmingConfigManager.load()
         CommissionHud.register()
         StorageOverlay.register()
+        BatEsp.register()
+        FarmingHud.register()
+        VisitorHelper.register()
+        GardenPlots.register()
 
-        ClientTickEvents.END_CLIENT_TICK.register {
+        ClientTickEvents.END_CLIENT_TICK.register { client ->
             CommissionTracker.tick()
+            EquipmentTracker.tick(client)
+            LowerSensitivity.tick(client)
+            PestHighlighter.tick(client)
         }
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->

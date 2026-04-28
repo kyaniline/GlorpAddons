@@ -1,5 +1,7 @@
 package com.glorpaddons.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.glorpaddons.farming.LowerSensitivity;
 import com.glorpaddons.storage.StorageOverlay;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.MinecraftClient;
@@ -54,6 +56,20 @@ public class MouseMixin {
         } else {
             InputUtil.setCursorParameters(window, code, centerX, centerY);
         }
+    }
+
+    /**
+     * When mouse lock is active (player holds a farming tool), substitute the
+     * sensitivity value with -1/3 so the camera barely moves.
+     */
+    @ModifyExpressionValue(
+        method = "updateMouse",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/option/SimpleOption;getValue()Ljava/lang/Object;",
+            ordinal = 0))
+    private Object glorpaddons$farmingMouseLock(Object original) {
+        if (LowerSensitivity.isSensitivityLowered()) return -1.0 / 3.0;
+        return original;
     }
 
     /**

@@ -1,5 +1,10 @@
 package com.glorpaddons.commissions
 
+import com.glorpaddons.equipment.EquipmentConfigManager
+import com.glorpaddons.farming.FarmingConfigManager
+import com.glorpaddons.itemrarity.ItemRarityConfigManager
+import com.glorpaddons.misc.MiscConfigManager
+import com.glorpaddons.mobesp.MobEspConfigManager
 import com.glorpaddons.storage.StorageConfigManager
 import com.glorpaddons.util.RenderUtils
 import net.minecraft.client.gui.Click
@@ -26,7 +31,7 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
     private val pad       = 12
 
     // ── Sections ────────────────────────────────────────────────────────────
-    private val sections  = listOf("⛏  Mining", "Inventory")
+    private val sections  = listOf("⛏  Mining", "Inventory", "Mob ESP", "Misc", "Farming")
     private var selected  = 0
 
     // ── Hit rects (computed in init) ────────────────────────────────────────
@@ -38,9 +43,25 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
     private var editRect          = Rect(0, 0, 0, 0)
 
     // Inventory
-    private var storageToggleRect  = Rect(0, 0, 0, 0)
-    private var scrollDecRect      = Rect(0, 0, 0, 0)
-    private var scrollIncRect      = Rect(0, 0, 0, 0)
+    private var storageToggleRect   = Rect(0, 0, 0, 0)
+    private var scrollDecRect       = Rect(0, 0, 0, 0)
+    private var scrollIncRect       = Rect(0, 0, 0, 0)
+    private var rarityBgToggleRect  = Rect(0, 0, 0, 0)
+    private var equipmentToggleRect = Rect(0, 0, 0, 0)
+
+    // Mob ESP
+    private var batEspToggleRect   = Rect(0, 0, 0, 0)
+
+    // Misc
+    private var cancelAnimToggleRect = Rect(0, 0, 0, 0)
+
+    // Farming
+    private var mouseLockToggleRect        = Rect(0, 0, 0, 0)
+    private var mouseLockGroundToggleRect  = Rect(0, 0, 0, 0)
+    private var pestHighlightToggleRect    = Rect(0, 0, 0, 0)
+    private var farmingHudToggleRect       = Rect(0, 0, 0, 0)
+    private var visitorHelperToggleRect    = Rect(0, 0, 0, 0)
+    private var gardenPlotsToggleRect      = Rect(0, 0, 0, 0)
 
     override fun init() {
         px = (width  - panelSize) / 2
@@ -58,7 +79,17 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
 
         toggleRect        = Rect(toggleX, cy, 36, 14)
         editRect          = Rect(cx, cy + 22, contentW, 20)
-        storageToggleRect = Rect(toggleX, cy, 36, 14)
+        storageToggleRect  = Rect(toggleX, cy,      36, 14)
+        rarityBgToggleRect  = Rect(toggleX, cy + 56, 36, 14)
+        equipmentToggleRect = Rect(toggleX, cy + 84, 36, 14)
+        batEspToggleRect    = Rect(toggleX, cy,      36, 14)
+        cancelAnimToggleRect  = Rect(toggleX, cy,      36, 14)
+        mouseLockToggleRect       = Rect(toggleX, cy,       36, 14)
+        mouseLockGroundToggleRect = Rect(toggleX, cy + 28,  36, 14)
+        pestHighlightToggleRect   = Rect(toggleX, cy + 56,  36, 14)
+        farmingHudToggleRect      = Rect(toggleX, cy + 84,  36, 14)
+        visitorHelperToggleRect   = Rect(toggleX, cy + 112, 36, 14)
+        gardenPlotsToggleRect     = Rect(toggleX, cy + 140, 36, 14)
 
         val arrowW = 16; val arrowH = 14
         val arrowRightX = px + panelSize - pad - arrowW
@@ -104,6 +135,9 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
         when (selected) {
             0 -> renderMining(context, mouseX, mouseY)
             1 -> renderInventory(context, mouseX, mouseY)
+            2 -> renderMobEsp(context, mouseX, mouseY)
+            3 -> renderMisc(context, mouseX, mouseY)
+            4 -> renderFarming(context, mouseX, mouseY)
         }
 
         super.render(context, mouseX, mouseY, delta)
@@ -151,6 +185,60 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
         val labelX = scrollDecRect.x + scrollDecRect.w + 11
         drawText(context, speed.toString(), labelX, cy + 57, 0xFFFFFFFF.toInt(), centered = true)
         drawArrowButton(context, scrollIncRect, "▶", mouseX, mouseY)
+
+        drawText(context, "Rarity Backgrounds", cx, cy + 84, 0xFFCCCCCC.toInt())
+        drawToggle(context, rarityBgToggleRect.x, rarityBgToggleRect.y, ItemRarityConfigManager.config.enabled)
+
+        drawText(context, "Show Equipment", cx, cy + 112, 0xFFCCCCCC.toInt())
+        drawToggle(context, equipmentToggleRect.x, equipmentToggleRect.y, EquipmentConfigManager.config.showEquipmentInInventory)
+    }
+
+    private fun renderMisc(context: DrawContext, mouseX: Int, mouseY: Int) {
+        val cx = px + colW + pad
+        val cy = py + pad + 4
+
+        drawText(context, "Misc", cx, cy, 0xFFFFFFFF.toInt())
+        context.fill(cx, cy + 12, px + panelSize - pad, cy + 13, 0x28FFFFFF)
+
+        drawText(context, "Cancel Anim. Updates", cx, cy + 28, 0xFFCCCCCC.toInt())
+        drawToggle(context, cancelAnimToggleRect.x, cancelAnimToggleRect.y, MiscConfigManager.config.cancelComponentUpdateAnimations)
+    }
+
+    private fun renderMobEsp(context: DrawContext, mouseX: Int, mouseY: Int) {
+        val cx = px + colW + pad
+        val cy = py + pad + 4
+
+        drawText(context, "Mob ESP", cx, cy, 0xFFFFFFFF.toInt())
+        context.fill(cx, cy + 12, px + panelSize - pad, cy + 13, 0x28FFFFFF)
+
+        drawText(context, "Bat ESP", cx, cy + 28, 0xFFCCCCCC.toInt())
+        drawToggle(context, batEspToggleRect.x, batEspToggleRect.y, MobEspConfigManager.config.batEspEnabled)
+    }
+
+    private fun renderFarming(context: DrawContext, mouseX: Int, mouseY: Int) {
+        val cx = px + colW + pad
+        val cy = py + pad + 4
+
+        drawText(context, "Farming", cx, cy, 0xFFFFFFFF.toInt())
+        context.fill(cx, cy + 12, px + panelSize - pad, cy + 13, 0x28FFFFFF)
+
+        drawText(context, "Mouse Lock", cx, cy + 28, 0xFFCCCCCC.toInt())
+        drawToggle(context, mouseLockToggleRect.x, mouseLockToggleRect.y, FarmingConfigManager.config.mouseLockEnabled)
+
+        drawText(context, "Ground Only", cx, cy + 56, 0xFFCCCCCC.toInt())
+        drawToggle(context, mouseLockGroundToggleRect.x, mouseLockGroundToggleRect.y, FarmingConfigManager.config.mouseLockGroundOnly)
+
+        drawText(context, "Pest Highlight", cx, cy + 84, 0xFFCCCCCC.toInt())
+        drawToggle(context, pestHighlightToggleRect.x, pestHighlightToggleRect.y, FarmingConfigManager.config.pestHighlightEnabled)
+
+        drawText(context, "Farming HUD", cx, cy + 112, 0xFFCCCCCC.toInt())
+        drawToggle(context, farmingHudToggleRect.x, farmingHudToggleRect.y, FarmingConfigManager.config.farmingHudEnabled)
+
+        drawText(context, "Visitor Helper", cx, cy + 140, 0xFFCCCCCC.toInt())
+        drawToggle(context, visitorHelperToggleRect.x, visitorHelperToggleRect.y, FarmingConfigManager.config.visitorHelperEnabled)
+
+        drawText(context, "Garden Plots", cx, cy + 168, 0xFFCCCCCC.toInt())
+        drawToggle(context, gardenPlotsToggleRect.x, gardenPlotsToggleRect.y, FarmingConfigManager.config.gardenPlotsEnabled)
     }
 
     private fun drawArrowButton(context: DrawContext, r: Rect, label: String, mx: Int, my: Int) {
@@ -215,6 +303,56 @@ class ConfigScreen : Screen(Text.literal("GlorpAddons")) {
                         (StorageConfigManager.config.scrollSpeed + 1).coerceAtMost(10)
                     StorageConfigManager.save()
                     return true
+                }
+                if (rarityBgToggleRect.contains(mx, my)) {
+                    ItemRarityConfigManager.config.enabled = !ItemRarityConfigManager.config.enabled
+                    ItemRarityConfigManager.save()
+                    return true
+                }
+                if (equipmentToggleRect.contains(mx, my)) {
+                    EquipmentConfigManager.config.showEquipmentInInventory = !EquipmentConfigManager.config.showEquipmentInInventory
+                    EquipmentConfigManager.save()
+                    return true
+                }
+            }
+            2 -> {
+                if (batEspToggleRect.contains(mx, my)) {
+                    MobEspConfigManager.config.batEspEnabled = !MobEspConfigManager.config.batEspEnabled
+                    MobEspConfigManager.save()
+                    return true
+                }
+            }
+            3 -> {
+                if (cancelAnimToggleRect.contains(mx, my)) {
+                    MiscConfigManager.config.cancelComponentUpdateAnimations = !MiscConfigManager.config.cancelComponentUpdateAnimations
+                    MiscConfigManager.save()
+                    return true
+                }
+            }
+            4 -> {
+                if (mouseLockToggleRect.contains(mx, my)) {
+                    FarmingConfigManager.config.mouseLockEnabled = !FarmingConfigManager.config.mouseLockEnabled
+                    FarmingConfigManager.save(); return true
+                }
+                if (mouseLockGroundToggleRect.contains(mx, my)) {
+                    FarmingConfigManager.config.mouseLockGroundOnly = !FarmingConfigManager.config.mouseLockGroundOnly
+                    FarmingConfigManager.save(); return true
+                }
+                if (pestHighlightToggleRect.contains(mx, my)) {
+                    FarmingConfigManager.config.pestHighlightEnabled = !FarmingConfigManager.config.pestHighlightEnabled
+                    FarmingConfigManager.save(); return true
+                }
+                if (farmingHudToggleRect.contains(mx, my)) {
+                    FarmingConfigManager.config.farmingHudEnabled = !FarmingConfigManager.config.farmingHudEnabled
+                    FarmingConfigManager.save(); return true
+                }
+                if (visitorHelperToggleRect.contains(mx, my)) {
+                    FarmingConfigManager.config.visitorHelperEnabled = !FarmingConfigManager.config.visitorHelperEnabled
+                    FarmingConfigManager.save(); return true
+                }
+                if (gardenPlotsToggleRect.contains(mx, my)) {
+                    FarmingConfigManager.config.gardenPlotsEnabled = !FarmingConfigManager.config.gardenPlotsEnabled
+                    FarmingConfigManager.save(); return true
                 }
             }
         }
