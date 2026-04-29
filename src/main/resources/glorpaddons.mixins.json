@@ -3,6 +3,8 @@
   "package": "com.glorpaddons.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "AbstractBlockStateCoalMixin",
+    "BlockCoalCullingMixin",
     "ChatHudMixin",
     "DrawBackgroundMixin",
     "EntityGlowMixin",

@@ -263,7 +263,23 @@
       "Bash(xxd /d/projects/glorpaddons/src/main/resources/assets/glorpaddons/textures/block/coal_glass.png)",
       "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Bitmap]::FromFile\\('D:\\\\projects\\\\glorpaddons\\\\src\\\\main\\\\resources\\\\assets\\\\glorpaddons\\\\textures\\\\block\\\\coal_glass.png'\\); $colors = @{}; for \\($y=0; $y -lt $img.Height; $y++\\) { for \\($x=0; $x -lt $img.Width; $x++\\) { $c = $img.GetPixel\\($x, $y\\); $key = \"A=$\\($c.A\\) R=$\\($c.R\\) G=$\\($c.G\\) B=$\\($c.B\\)\"; if \\($colors.ContainsKey\\($key\\)\\) { $colors[$key]++ } else { $colors[$key] = 1 } } }; $colors.GetEnumerator\\(\\) | Sort-Object Value -Descending | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" }; $img.Dispose\\(\\))",
       "Bash($JAVAP *)",
-      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p /tmp/mc-classes/net/minecraft/client/render/block/BlockModelRenderer.class)"
+      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p /tmp/mc-classes/net/minecraft/client/render/block/BlockModelRenderer.class)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(javap -p /tmp/mcsources/merged/net/minecraft/block/Block.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p /tmp/mcsources/merged/net/minecraft/block/Block.class)",
+      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p '/tmp/mcsources/merged/net/minecraft/block/AbstractBlock$AbstractBlockState.class')",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p /tmp/mcsources/merged/net/minecraft/util/shape/VoxelShape.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p /tmp/mcsources/merged/net/minecraft/block/SlabBlock.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p /tmp/mcsources/merged/net/minecraft/block/enums/SlabType.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -v /tmp/jartest/com/glorpaddons/mixin/BlockCoalCullingMixin.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p net/minecraft/client/render/chunk/ChunkBuilder*.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p -c net/minecraft/block/Block.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p -c net/minecraft/client/render/block/BlockModelRenderer.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p net/minecraft/block/Block.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p -c net/minecraft/client/render/chunk/SectionBuilder.class)",
+      "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p net/minecraft/client/render/chunk/SectionBuilder.class)",
+      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p 'net/minecraft/block/AbstractBlock$AbstractBlockState.class')",
+      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p -c 'net/minecraft/block/AbstractBlock$AbstractBlockState.class')"
     ]
   }
 }
