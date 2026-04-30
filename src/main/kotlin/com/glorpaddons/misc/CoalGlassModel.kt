@@ -114,11 +114,7 @@ object CoalGlassModel {
             return when (edge) {
                 Direction.UP -> if (isBottom) base else null
                 Direction.DOWN -> if (!isBottom) base else null
-                else -> if (isBottom) {
-                    floatArrayOf(base[0], 0f, base[2], 0.5f)
-                } else {
-                    floatArrayOf(base[0], 0.5f, base[2], 1f)
-                }
+                else -> base
             }
         }
         return when (face) {
@@ -179,6 +175,10 @@ object CoalGlassModel {
 
             for (face in Direction.entries) {
                 if (cullTest.test(face)) continue
+                // When a slab sits directly above, the cube's top outline is already
+                // drawn by the side faces' top bands — skip the top face's own perimeter
+                // bands to avoid the extra pixels at the inner corners.
+                if (slabAbove && face == Direction.UP) continue
                 val faceNeighbor = blockView.getBlockState(pos.offset(face))
                 if (faceNeighbor.isOf(Blocks.COAL_BLOCK)) continue
 
@@ -186,8 +186,6 @@ object CoalGlassModel {
                     emitBand(emitter, sprite, face, it)
                 }
 
-                // For each perpendicular slab at the same y-level, draw a horizontal band
-                // at the slab's profile boundary (y=0.5) — this is "where the slab connects".
                 val sideSlabTypes = if (face.axis != Direction.Axis.Y) {
                     perpDirections(face)
                         .filter { it.axis != Direction.Axis.Y }
@@ -210,30 +208,11 @@ object CoalGlassModel {
                     emitBand(emitter, sprite, face, band)
                 }
 
-                // Skip the cube's regular bottom edge band whenever a slab is connected
-                // somewhere other than directly below — the slab's own connection edges
-                // (top band for an above slab, the y=0.5 band emitted above for a side
-                // slab) take its place.
-                val skipBottomEdge = perpDirections(face)
-                    .filter { it != Direction.DOWN }
-                    .any { dir ->
-                        val ns = blockView.getBlockState(pos.offset(dir))
-                        ns.block is SlabBlock && ns.get(SlabBlock.TYPE) != SlabType.DOUBLE
-                    }
-
                 for (edge in perpDirections(face)) {
-                    if (skipBottomEdge && edge == Direction.DOWN) continue
+                    if (slabAbove && (edge == Direction.DOWN || edge == Direction.UP)) continue
 
                     val edgeNeighbor = blockView.getBlockState(pos.offset(edge))
-                    if (edgeNeighbor.isOf(Blocks.COAL_BLOCK)) {
-                        // Hide the seam when the diagonal corner is air (the adjacent coal's
-                        // same-direction face renders, producing a duplicate) or when it's a
-                        // slab (we treat the connected coal+slab structure as one mass).
-                        val cornerState = blockView.getBlockState(pos.offset(edge).offset(face))
-                        if (cornerState.isAir || cornerState.block is SlabBlock) continue
-                        emitBand(emitter, sprite, face, edgeBounds(face, edge))
-                        continue
-                    }
+                    if (edgeNeighbor.isOf(Blocks.COAL_BLOCK)) continue
 
                     val b = edgeBoundsForNeighbor(face, edge, edgeNeighbor) ?: continue
                     emitBand(emitter, sprite, face, b)
