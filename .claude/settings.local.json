@@ -279,7 +279,9 @@
       "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p -c net/minecraft/client/render/chunk/SectionBuilder.class)",
       "Bash(\"/c/Program Files/Java/jdk-24/bin/javap.exe\" -p net/minecraft/client/render/chunk/SectionBuilder.class)",
       "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p 'net/minecraft/block/AbstractBlock$AbstractBlockState.class')",
-      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p -c 'net/minecraft/block/AbstractBlock$AbstractBlockState.class')"
+      "Bash('/c/Program Files/Java/jdk-24/bin/javap.exe' -p -c 'net/minecraft/block/AbstractBlock$AbstractBlockState.class')",
+      "Bash(git merge *)",
+      "Bash(git stash *)"
     ]
   }
 }
